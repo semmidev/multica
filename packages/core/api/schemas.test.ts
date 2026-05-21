@@ -5,6 +5,7 @@ import {
   DashboardUsageDailyListSchema,
   DuplicateIssueErrorBodySchema,
   EMPTY_USER,
+  ListIssuesResponseSchema,
   RuntimeHourlyActivityListSchema,
   RuntimeUsageByAgentListSchema,
   RuntimeUsageByHourListSchema,
@@ -12,6 +13,64 @@ import {
   UserSchema,
 } from "./schemas";
 import { parseWithFallback } from "./schema";
+
+const baseIssue = {
+  id: "11111111-1111-1111-1111-111111111111",
+  workspace_id: "ws-1",
+  number: 1,
+  identifier: "MUL-1",
+  title: "Test",
+  description: null,
+  status: "todo",
+  priority: "medium",
+  assignee_type: null,
+  assignee_id: null,
+  creator_type: "member",
+  creator_id: "user-1",
+  parent_issue_id: null,
+  project_id: null,
+  position: 0,
+  start_date: null,
+  due_date: null,
+  metadata: {},
+  created_at: "2026-01-01T00:00:00Z",
+  updated_at: "2026-01-01T00:00:00Z",
+};
+
+describe("IssueSchema (via ListIssuesResponseSchema)", () => {
+  it("accepts a primitive metadata KV map", () => {
+    const payload = {
+      issues: [
+        {
+          ...baseIssue,
+          metadata: { pipeline_status: "waiting", pr_number: 3, is_blocked: true },
+        },
+      ],
+      total: 1,
+    };
+    const parsed = ListIssuesResponseSchema.parse(payload);
+    expect(parsed.issues[0]?.metadata).toEqual({
+      pipeline_status: "waiting",
+      pr_number: 3,
+      is_blocked: true,
+    });
+  });
+
+  it("defaults metadata to {} when the server omits it (older backend)", () => {
+    const { metadata: _omit, ...issueWithoutMetadata } = baseIssue;
+    const payload = { issues: [issueWithoutMetadata], total: 1 };
+    const parsed = ListIssuesResponseSchema.parse(payload);
+    expect(parsed.issues[0]?.metadata).toEqual({});
+  });
+
+  it("rejects metadata with non-primitive values (nested object)", () => {
+    const payload = {
+      issues: [{ ...baseIssue, metadata: { nested: { x: 1 } } }],
+      total: 1,
+    };
+    expect(ListIssuesResponseSchema.safeParse(payload).success).toBe(false);
+  });
+});
 
 // The duplicate-issue branch in create-issue.tsx feeds ApiError.body
 // (typed as `unknown`) through this schema. Any future server drift that

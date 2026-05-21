@@ -1,4 +1,4 @@
-import type { Issue, IssueStatus, IssuePriority, IssueAssigneeType } from "./issue";
+import type { Issue, IssueMetadata, IssueStatus, IssuePriority, IssueAssigneeType } from "./issue";
 import type { MemberRole } from "./workspace";
 import type { Project } from "./project";
 
@@ -54,6 +54,8 @@ export interface ListIssuesParams {
    * disjoint result sets by construction.
    */
   involves_user_id?: string;
+  /** JSONB containment filter on `issue.metadata`. AND across keys. */
+  metadata?: IssueMetadata;
   open_only?: boolean;
   /**
    * Restrict the result to issues with at least one of `start_date` /
@@ -83,6 +85,8 @@ export interface ListGroupedIssuesParams {
   project_id?: string;
   /** See `ListIssuesParams.involves_user_id` — same semantics. */
   involves_user_id?: string;
+  /** JSONB containment filter on `issue.metadata`. AND across keys. */
+  metadata?: IssueMetadata;
   assignee_filters?: IssueActorRef[];
   include_no_assignee?: boolean;
   creator_filters?: IssueActorRef[];
